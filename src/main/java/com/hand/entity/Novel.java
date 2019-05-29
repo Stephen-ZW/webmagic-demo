@@ -8,6 +8,7 @@ package com.hand.entity;
 
 import lombok.Data;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -21,13 +22,16 @@ import java.util.List;
 @Data
 public class Novel {
 
-    private Long noveld;
+    private int noveld;
 
     //小说名称
     private String novelName;
 
     //小说地址
     private String novelUrl;
+
+    //插入时间
+    private Date insertTime;
 
     private List<Chapter> chapters;
 

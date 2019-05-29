@@ -20,7 +20,9 @@ import lombok.Data;
 @Data
 public class Chapter {
 
-    private Long chapterId;
+    private int chapterId;
+
+    private int novelId;
 
     //章节名称
     private String chapterName;
