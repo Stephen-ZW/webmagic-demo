@@ -8,7 +8,6 @@ package com.hand.processor;
 
 import com.hand.entity.Chapter;
 import com.hand.entity.Novel;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import us.codecraft.webmagic.Page;
@@ -16,6 +15,7 @@ import us.codecraft.webmagic.Request;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.processor.PageProcessor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -35,7 +35,8 @@ public class NovelProcessor implements PageProcessor {
     //地址限制
     private static final String TARGET_USER_BASE_INFO = "http://www.xbiquge.la/[\\w-]+";
 
-    private Site site = Site.me().setCycleRetryTimes(5).setRetryTimes(5).setSleepTime(300).setTimeOut(3 * 60 * 1000);
+    private Site site = Site.me().setCycleRetryTimes(5).setRetryTimes(5).setSleepTime(300).setTimeOut(3 * 60 * 1000)
+            .addHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36");
 
     /**
      * 爬取页面
@@ -44,15 +45,6 @@ public class NovelProcessor implements PageProcessor {
      */
     @Override
     public void process(Page page) {
-//        List<String> novalList = page.getHtml().links().regex(TARGET_USER_BASE_INFO).all();
-//
-//        for (String s : novalList) {
-//            if (StringUtils.isBlank(s) || s.equals("#") || s.startsWith("javascript:")) {
-//                continue;
-//            }
-//            //page.addTargetRequest(s+"/about");
-//            System.err.println(s);
-//        }
 
         String url = page.getUrl().toString();
         if (null == page.getHtml()) {
@@ -65,29 +57,77 @@ public class NovelProcessor implements PageProcessor {
         }
 
         if (url.startsWith("http://www.xbiquge.la/xiaoshuodaquan/")) {
-            List<String> novalList = page.getHtml().xpath("//*[@id='main']/[@class='novellist']/ul/li/a/@href").all();
-            for (String novalUrl : novalList) {
-                Novel novel = new Novel();
-                novel.setNovelUrl(novalUrl);
+            processNovelHomePage(page);
+        } else if (url.startsWith("http://www.xbiquge.la")
+                && !url.contains("xiaoshuodaquan")
+                && !url.endsWith("html")) {
+            processNovelDetail(page, url);
+        } else if (url.endsWith("html")) {
+            processChapterDetail(page, url);
+        }
+    }
+
+    /**
+     * 处理小说首页
+     *
+     * @param page 页面
+     */
+    public void processNovelHomePage(Page page) {
+        List<String> novalList = page.getHtml().xpath("//*[@id='main']/*[@class='novellist']/ul/li/a/@href").all();
+        for (String novalUrl : novalList) {
+            if (novalUrl.equals("http://www.xbiquge.la/15/15409/")) {
                 page.addTargetRequest(new Request(novalUrl));
             }
         }
+    }
 
-        if (url.startsWith("http://www.xbiquge.la") && !url.contains("xiaoshuodaquan")) {
-            List<String> chapterList = page.getHtml().xpath("//*[@id='list']/dl/dd/a/@href").all();
-            for (String chapterUrl : chapterList) {
-                chapterUrl = "http://www.xbiquge.la" + chapterUrl;
-                page.addTargetRequest(new Request(chapterUrl));
-            }
+    /**
+     * 处理小说页
+     *
+     * @param page 页面
+     * @param url  地址信息
+     */
+    public void processNovelDetail(Page page, String url) {
+        List<String> chapterList = page.getHtml().xpath("//*[@id='list']/dl/dd/a/@href").all();
+        String novelName = page.getHtml()
+                .xpath("//div[@id='wrapper']/div[@class='box_con']/div[@id='maininfo']/div[@id='info']/h1/text()").toString();
+        Novel novel = new Novel();
+        int novelId = Integer.parseInt(url.substring(url.indexOf("a/") + 2).replace("/", ""));
+        novel.setNoveld(novelId);
+        novel.setNovelUrl(url);
+        novel.setNovelName(novelName);
+        page.putField("novel", novel);
+        List<String> chapterUrls = new ArrayList<>();
+        for (String chapterUrl : chapterList) {
+            chapterUrl = "http://www.xbiquge.la" + chapterUrl;
+            chapterUrls.add(chapterUrl);
         }
-
-        if (url.endsWith("html")) {
-            Chapter chapter = new Chapter();
-            String chpaterName = page.getHtml().xpath("//div[@class='content_read']/div[@class='box_con']/div[@class='bookname']/h1/text()").toString();
-        }
-
+        page.addTargetRequests(chapterUrls);
 
     }
+
+    /**
+     * 处理章节页
+     *
+     * @param page 页面
+     * @param url  地址信息
+     */
+    public void processChapterDetail(Page page, String url) {
+        String chpaterName = page.getHtml()
+                .xpath("//div[@class='content_read']/div[@class='box_con']/div[@class='bookname']/h1/text()").toString();
+        String chapterContent = page.getHtml()
+                .xpath("//div[@class='content_read']/div[@class='box_con']/div[@id='content']/text()").toString();
+        int novelId = Integer.parseInt(url.substring(url.indexOf("a/") + 2, url.lastIndexOf("/")).replace("/", ""));
+        int chapterId = Integer.parseInt(url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf(".")));
+        Chapter chapter = new Chapter();
+        chapter.setChapterId(chapterId);
+        chapter.setNovelId(novelId);
+        chapter.setChapterName(chpaterName);
+        chapter.setChapterContent(chapterContent);
+        chapter.setChapterUrl(url);
+        page.putField("chapter", chapter);
+    }
+
 
     /**
      * 设置网站相关配置
@@ -96,6 +136,6 @@ public class NovelProcessor implements PageProcessor {
      */
     @Override
     public Site getSite() {
-        return null;
+        return site;
     }
 }
