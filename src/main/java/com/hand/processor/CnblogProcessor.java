@@ -10,7 +10,14 @@ import us.codecraft.webmagic.utils.HttpConstant;
 
 import java.util.List;
 
-public class CnblogsSpider implements PageProcessor {
+/**
+ * 爬取博客网信息
+ *
+ * @author Wei
+ * @version 1.0
+ * @date 2019/5/31 17:52
+ */
+public class CnblogProcessor implements PageProcessor {
 
     private Site site = Site.me().setRetryTimes(3).setSleepTime(1000).setTimeOut(10000)
             .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
@@ -23,7 +30,7 @@ public class CnblogsSpider implements PageProcessor {
 
         if (page.getUrl().regex("^https://www\\.cnblogs\\.com$").match()) {
             try {
-                page.addTargetRequests(page.getHtml().xpath("//*[@id=\"post_list\"]/div/div[@class='post_item_body']/h3/a/@href").all());
+                page.addTargetRequests(page.getHtml().xpath("//*[@id='post_list']/div/div[@class='post_item_body']/h3/a/@href").all());
                 pageNum++;
                 //模拟post请求
                 Request req = new Request();
@@ -63,6 +70,6 @@ public class CnblogsSpider implements PageProcessor {
     }
 
     public static void main(String[] args) {
-        Spider.create(new CnblogsSpider()).addUrl("https://www.cnblogs.com").thread(3).run();
+        Spider.create(new CnblogProcessor()).addUrl("https://www.cnblogs.com").thread(3).run();
     }
 }

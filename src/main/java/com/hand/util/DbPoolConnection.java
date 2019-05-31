@@ -23,7 +23,7 @@ import java.util.Properties;
  */
 public class DbPoolConnection {
 
-    private static Logger log = Logger.getLogger(DbPoolConnection.class);
+    private static Logger logger = Logger.getLogger(DbPoolConnection.class);
 
     private static DbPoolConnection databasePool = null;
     private static DruidDataSource dds = null;
@@ -62,7 +62,7 @@ public class DbPoolConnection {
         ClassLoader classLoader = DbPoolConnection.class.getClassLoader();
         URL resource = classLoader.getResource(configFile);
         String path = resource.getPath();
-        log.info("加载配置文件..." + path);
+        logger.info("加载配置文件..." + path);
         File file = new File(path);
         InputStream inputStream = null;
         Properties p = null;

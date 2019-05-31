@@ -16,9 +16,7 @@ import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.processor.PageProcessor;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -38,10 +36,13 @@ public class NovelProcessor implements PageProcessor {
     //地址限制
     private static final String TARGET_USER_BASE_INFO = "http://www.xbiquge.la/[\\w-]+";
 
+    //筛选p标签及内容
     private static final String P_MATCH_REGEX = "<p[^>]*?>.*?</p>";
 
+    //筛选除<br>标签的内容
     //private static final String TAG_MATCH_REGEX = "(?!<(br).*?>)<.*?>";
 
+    //筛选标签中的内容
     private static final String TAG_MATCH_REGEX = "<[^>]*>";
 
     private Site site = Site.me().setCycleRetryTimes(5).setRetryTimes(5).setSleepTime(300).setTimeOut(3 * 60 * 1000)
@@ -56,6 +57,7 @@ public class NovelProcessor implements PageProcessor {
     public void process(Page page) {
 
         String url = page.getUrl().toString();
+        logger.info("开始爬取地址：" + url);
         if (null == page.getHtml()) {
             try {
                 logger.warn("#################  html为空，线程休眠10分钟");
@@ -84,7 +86,7 @@ public class NovelProcessor implements PageProcessor {
     public void processNovelHomePage(Page page) {
         List<String> novalList = page.getHtml().xpath("//*[@id='main']/*[@class='novellist']/ul/li/a/@href").all();
         for (String novalUrl : novalList) {
-            if (novalUrl.equals("http://www.xbiquge.la/1/1516/")) {
+            if (novalUrl.equals("http://www.xbiquge.la/14/14689/")) {
                 page.addTargetRequest(new Request(novalUrl));
             }
         }
@@ -132,8 +134,8 @@ public class NovelProcessor implements PageProcessor {
 
         Pattern p_pattern = Pattern.compile(P_MATCH_REGEX, Pattern.CASE_INSENSITIVE);
         Pattern tag_pattern = Pattern.compile(TAG_MATCH_REGEX, Pattern.CASE_INSENSITIVE);
-        chapterContent = tag_pattern.matcher(p_pattern.matcher(chapterContent).replaceAll("")).replaceAll("").replace("&nbsp;", " ");
-        //.replace("<br>","\n");
+        chapterContent = tag_pattern.matcher(p_pattern.matcher(chapterContent).replaceAll(""))
+                .replaceAll("").replace("&nbsp;", " ");
         int novelId = Integer.parseInt(url.substring(url.indexOf("a/") + 2, url.lastIndexOf("/")).replace("/", ""));
         int chapterId = Integer.parseInt(url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf(".")));
         Chapter chapter = new Chapter();
