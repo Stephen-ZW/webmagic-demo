@@ -24,6 +24,8 @@ public class MyCrawler {
         pipelines.add(new JdbcPipeline());
 
         Spider spider = Spider.create(new NovelProcessor()).setPipelines(pipelines);
-        spider.addUrl("http://www.xbiquge.la/xiaoshuodaquan/").thread(2).run();
+        spider.addUrl("http://www.xbiquge.la/xiaoshuodaquan/");
+        spider.thread(6);
+        spider.run();
     }
 }

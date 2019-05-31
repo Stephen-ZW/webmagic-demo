@@ -8,6 +8,8 @@ package com.hand.entity;
 
 import lombok.Data;
 
+import java.util.Date;
+
 
 /**
  * 章节
@@ -32,4 +34,6 @@ public class Chapter {
 
     //章节内容
     private String chapterContent;
+
+    private Date insert_time;
 }

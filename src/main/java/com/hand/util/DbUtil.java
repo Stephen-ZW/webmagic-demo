@@ -17,6 +17,7 @@ public class DbUtil {
     private DataSource ds = null;
     private QueryRunner runner = null;
 
+
     public DbUtil() {
         try {
             this.ds = DbPoolConnection.getInstance().getDataSource();

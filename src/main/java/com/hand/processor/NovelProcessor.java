@@ -16,7 +16,10 @@ import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.processor.PageProcessor;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 实现PageProcessor接口，爬取处理数据
@@ -35,8 +38,14 @@ public class NovelProcessor implements PageProcessor {
     //地址限制
     private static final String TARGET_USER_BASE_INFO = "http://www.xbiquge.la/[\\w-]+";
 
+    private static final String P_MATCH_REGEX = "<p[^>]*?>.*?</p>";
+
+    //private static final String TAG_MATCH_REGEX = "(?!<(br).*?>)<.*?>";
+
+    private static final String TAG_MATCH_REGEX = "<[^>]*>";
+
     private Site site = Site.me().setCycleRetryTimes(5).setRetryTimes(5).setSleepTime(300).setTimeOut(3 * 60 * 1000)
-            .addHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36");
+            .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36");
 
     /**
      * 爬取页面
@@ -75,7 +84,7 @@ public class NovelProcessor implements PageProcessor {
     public void processNovelHomePage(Page page) {
         List<String> novalList = page.getHtml().xpath("//*[@id='main']/*[@class='novellist']/ul/li/a/@href").all();
         for (String novalUrl : novalList) {
-            if (novalUrl.equals("http://www.xbiquge.la/15/15409/")) {
+            if (novalUrl.equals("http://www.xbiquge.la/1/1516/")) {
                 page.addTargetRequest(new Request(novalUrl));
             }
         }
@@ -91,10 +100,12 @@ public class NovelProcessor implements PageProcessor {
         List<String> chapterList = page.getHtml().xpath("//*[@id='list']/dl/dd/a/@href").all();
         String novelName = page.getHtml()
                 .xpath("//div[@id='wrapper']/div[@class='box_con']/div[@id='maininfo']/div[@id='info']/h1/text()").toString();
+        String author = page.getHtml().xpath("//div[@id='wrapper']/div[@class='box_con']/div[@id='maininfo']/div[@id='info']/p[1]/text()").toString();
         Novel novel = new Novel();
         int novelId = Integer.parseInt(url.substring(url.indexOf("a/") + 2).replace("/", ""));
-        novel.setNoveld(novelId);
+        novel.setNovelId(novelId);
         novel.setNovelUrl(url);
+        novel.setAuthor(author);
         novel.setNovelName(novelName);
         page.putField("novel", novel);
         List<String> chapterUrls = new ArrayList<>();
@@ -114,9 +125,15 @@ public class NovelProcessor implements PageProcessor {
      */
     public void processChapterDetail(Page page, String url) {
         String chpaterName = page.getHtml()
-                .xpath("//div[@class='content_read']/div[@class='box_con']/div[@class='bookname']/h1/text()").toString();
+                .xpath("//div[@class='content_read']/div[@class='box_con']/div[@class='bookname']/h1/text()")
+                .toString().replace("正文卷", "").replace("正文", "");
         String chapterContent = page.getHtml()
-                .xpath("//div[@class='content_read']/div[@class='box_con']/div[@id='content']/text()").toString();
+                .xpath("//div[@class='content_read']/div[@class='box_con']/div[@id='content']").toString();
+
+        Pattern p_pattern = Pattern.compile(P_MATCH_REGEX, Pattern.CASE_INSENSITIVE);
+        Pattern tag_pattern = Pattern.compile(TAG_MATCH_REGEX, Pattern.CASE_INSENSITIVE);
+        chapterContent = tag_pattern.matcher(p_pattern.matcher(chapterContent).replaceAll("")).replaceAll("").replace("&nbsp;", " ");
+        //.replace("<br>","\n");
         int novelId = Integer.parseInt(url.substring(url.indexOf("a/") + 2, url.lastIndexOf("/")).replace("/", ""));
         int chapterId = Integer.parseInt(url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf(".")));
         Chapter chapter = new Chapter();

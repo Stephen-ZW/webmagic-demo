@@ -22,10 +22,13 @@ import java.util.List;
 @Data
 public class Novel {
 
-    private int noveld;
+    private int novelId;
 
     //小说名称
     private String novelName;
+
+    //作者
+    private String author;
 
     //小说地址
     private String novelUrl;
